@@ -1,6 +1,6 @@
 import pygame
 
-from .enums import RevealColors, CellFlagged
+from .enums import RevealColors, CellFlagged, CellRevealed
 
 from enum import Enum
 
@@ -27,7 +27,7 @@ class Cell(pygame.sprite.Sprite):
         super().__init__()
 
         self._id: int = cell_num
-        self._reveal_color: int = RevealColors.NOT_SET.value
+        self._reveal_color: RevealColors = RevealColors.NOT_SET
         self._grid_r: int = grid_r
         self._grid_c: int = grid_c
         self._number_of_neighbors:int = 0
@@ -41,8 +41,8 @@ class Cell(pygame.sprite.Sprite):
         self.rect: pygame.Rect = self.image.get_rect()
 
         self.rect.topleft = (start_pos[0], start_pos[1])
-    
-        self._revealed: bool = False
+
+        self._revealed: CellRevealed = CellRevealed.NO_REVEAL
         self._flag = CellFlagged.NO_FLAG
 
         print(f"Added cell: {self.id}\n\tpos: {self.rect.topleft}\n\tsize: {self.image.get_size()}\n")
@@ -66,10 +66,11 @@ class Cell(pygame.sprite.Sprite):
     @property
     def grid_r(self) -> int:
         return self._grid_r
+    
     # Cell.grid_c
     @property
     def grid_c(self) -> int:
-        return self.grid_c
+        return self._grid_c
     
     @property
     def flag(self) -> bool:
@@ -84,32 +85,42 @@ class Cell(pygame.sprite.Sprite):
         except AssertionError as e:
             print("ERROR: Flag is not a bool!")
 
-        self._flag = flag
+        self._flag = CellFlagged.FLAG if flag else CellFlagged.NO_FLAG
 
     @property
-    def revealed(self)->bool:
-        return self._revealed
+    def revealed(self) -> bool:
+        print(self._revealed)
+        return self._revealed.value
 
     @revealed.setter
     def revealed(self, r: bool):
         assert isinstance(r, bool)
-        self._revealed = r
+        self._revealed = CellRevealed.REVEALED if r else CellRevealed.NO_REVEAL
         return
 
     def update_to_flagged(self):
-        
         print("Flaggin!")
-        self._flag = True
-        self.image.fill(RevealColors.FLAGGED)
+        self.flag = True
+        self.image.fill(RevealColors.FLAGGED.value)
+
+    def update_to_unflagged(self):
+        print("Unflaggin")
+        self.flag = False
+        self.image.fill(RevealColors.NOT_REVEALED.value)
 
     def reveal_cell(self):
-        self._active = not self._active
-        print(f"Reveal color: {self.reveal_color}")
-        self.image.fill(self.reveal_color)
-        return 
+        """
+            Fill cell to be of color self._reveal_color.value
+        """
+        if self.revealed == CellRevealed.REVEALED.value\
+            or self.flag == CellFlagged.FLAG.value:
+            return False
+
+        self.revealed = CellRevealed.REVEALED.value
+        print(f"Reveal color: {self._reveal_color.value}")
+        self.image.fill(self._reveal_color.value)
+        return True
     
-
-
     def get_cell_type(self):
         return (self._cell_type)
 
@@ -117,7 +128,7 @@ class Cell(pygame.sprite.Sprite):
         return (self.grid_i, self.grid_j)
 
     def _update_cell_reveal_color(self):
-        self.reveal_color = Cell.REVEAL_COLOR_LOOKUP_TABLE[self.number_of_neighbors].value
+        self._reveal_color = Cell.REVEAL_COLOR_LOOKUP_TABLE[self.number_of_neighbors]
         return
         
 

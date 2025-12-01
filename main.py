@@ -20,7 +20,6 @@ class App:
 
         self.grid: Grid = None
         self.event_handler:EventHandler = None
-        print("Main screen size: ", self.size)
 
     def on_init(self):
         pygame.init()
@@ -42,6 +41,8 @@ class App:
 
         self.event_handler = EventHandler()
 
+        pygame.display.flip()
+
         return True
     
     @property
@@ -53,8 +54,6 @@ class App:
         return coords, action
     
     def on_loop(self, coords, action: bool):
-        
-        # lookup coordinate for cell!
 
         if(action == Action.REVEAL):
             print("Updating cell!")
@@ -62,6 +61,10 @@ class App:
             self.grid.update_logic(sprite_num, action)
         elif action == Action.DRAG:
             pass        
+        elif action == Action.FLAG:
+            print("Begin Flag procedure!")
+            sprite_num = self.grid.get_cell_from_coords(coords)
+            self.grid.update_logic(sprite_num, action)
         return
     
     def on_render(self):

@@ -5,6 +5,7 @@ import random
 import sys
 from .settings import Settings
 from .enums import RevealColors, cell_neighbor_increments, Action
+from .enums import CellFlagged, CellRevealed
 
 
 class GridMetaData:
@@ -126,10 +127,10 @@ class Grid:
         self.metadata.on_init(App._display_surf, settings)
         return True
     
-    def get_grid_coords_from_cell_num(self, cell_num:int)->Tuple[int, int]:
-        row = cell_num // self.metadata.num_columns
-        col = cell_num % self.metadata.num_columns
-        return row, col
+    def get_grid_coords_from_cell_num(self, cell_num: int)->Tuple[int, int]:
+        r = cell_num // self.metadata.num_columns
+        c = cell_num % self.metadata.num_columns
+        return r, c
 
     def _init_grid(self):
         
@@ -141,7 +142,6 @@ class Grid:
 
             self.grid[row][col] = MineCell(m.id, self.compute_cell_pos(row, col), self.metadata.cell_size, row, col)
             self.cell_group.add(self.grid[row][col])
-            print("tttt: ", m.id, row, col)
             self.render_queue.add(self.grid[row][col])
         
         if(len(self.render_queue) > 0):
@@ -206,8 +206,8 @@ class Grid:
 
     def _reveal_cells(self):
         for r in range(0, self.metadata.num_rows):
-            for j in range(0, self.metadata.num_columns):
-                self.grid[i][j].reveal_cell()
+            for c in range(0, self.metadata.num_columns):
+                self.grid[r][c].reveal_cell()
         return
 
     def on_init(self, settings: Settings, App):
@@ -219,7 +219,7 @@ class Grid:
         self._determine_neighbor_cells()
         
         # self._reveal_cells()
-
+        self.update_render()
         return
     
     def convert_id_to_grid_coords(self, cell_id: int)-> Tuple[int, int]:
@@ -290,8 +290,9 @@ class Grid:
         self.render_queue.add(self.grid[r][c])
         
         self._rq_empty = False
-
-
+        
+        self.update_render()
+        return
     def _update_logic_reveal_mines(self):
         """
             We essentially want to update ALL mines here!
@@ -302,61 +303,77 @@ class Grid:
             self.render_queue.add(mine)
             self._rq_empty = False
 
-    def _logic_flag(self, r, c):
-        res = False # Did something get updated!
-        cell_to_update = self.grid[r][c]
-        if cell_to_update.revealed == False:
+    def _logic_flag(self, cell_id: int):
+        
+        res = False
+        cell: Cell = self.get_cell_from_id(cell_id)
+        print(cell.revealed)
+        if cell.revealed is not True:
+            print("TTTTTTTTTTTt")
+            if cell.flag:
+                cell.update_to_unflagged()
+            else:
+                print("Updating to flagged")
+                cell.update_to_flagged()
 
-                cell_to_update.flag = not cell_to_update.flag
-                if cell_to_update.flag:
-                    cell_to_update.update_to_flagged()
-                else:
-                    cell_to_update.update_to_unflag()
+            res = True
+            self.render_queue.add(cell)
+            self._rq_empty = False
 
-                res = True
         return res
-    
+
+    def _logic_reveal(self, cell_id: int):
+        cell = self.get_cell_from_id(cell_id)
+
+        if cell.flag:
+            return False
+
+        if isinstance(cell, EmptyCell):
+            # Only reveal the one cell!
+            if cell.number_of_neighbors > 0:
+                cell.reveal_cell()
+                self.render_queue.add(cell)
+                self._rq_empty = False
+            # Reveal ALL surrounding EMPTY cells
+            else:
+                self._update_logic_empty_cells(*self.get_grid_coords_from_cell_num(cell_id))
+        else:
+            if cell.flag == CellFlagged.NO_FLAG:
+                cell.reveal_cell()
+            self._update_logic_reveal_mines()
+        
+        return True
+
+    def get_cell_from_id(self, cell_id: int):
+        row, col = self.convert_id_to_grid_coords(cell_id)
+        return self.grid[row][col]
+
 
     def update_logic(self, sprite_num: int, action: Action):
-        
-        """
 
-            For right now. We simulate a click!
-        
-        """
+        assert isinstance(action, Action)
+        assert isinstance(sprite_num, int)
+
         res = False
-        row, col = self.convert_id_to_grid_coords(sprite_num)
 
-        cell_to_update = self.grid[row][col]
-
-        # If we try to flag a cell
         if action == Action.FLAG:
-            self._logic_flag(row, col)
+            print("DDDD")
+            res = self._logic_flag(sprite_num)
         
-        # Reveal a cell
         elif action == Action.REVEAL:
-        # Here is where we do the actual updating to the cell
-            if isinstance(cell_to_update, EmptyCell) == True:
-                # Only reveal the one cell!
-                if cell_to_update.number_of_neighbors > 0:
-                    cell_to_update.reveal_cell()
-                    self.render_queue.add(cell_to_update)
-                    self._rq_empty = False
-                # Reveal ALL surrounding EMPTY cells
-                else:
-                    self._update_logic_empty_cells(row, col)
-            else:
-                self._update_logic_reveal_mines()
+            res = self._logic_reveal(sprite_num)
     
         return res
     
     def update_render(self):
-        
+        print("Updating render!")
+
         assert isinstance(self.render_queue, pygame.sprite.Group)
 
         if(self._rq_empty == False):
             self.render_queue.draw(self.metadata.parent_screen)
             self.render_queue.empty()
+            self._rq_empty = True
 
         return
 

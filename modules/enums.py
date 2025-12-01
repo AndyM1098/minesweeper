@@ -15,6 +15,13 @@ class RevealColors(Enum):
     NOT_REVEALED = (125,125,125)
     FLAGGED = (225, 225, 225)
 
+    # Define regulary used values perhaps...?
+    WHITE = (255, 255, 255)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+    BLUE = (0, 0, 255)
+    BLACK = (0, 0, 0)
+
 class cell_neighbor_increments(Enum):
     UPPER_LEFT      = (-1, -1)
     UPPER_MIDDLE    = (-1, 0)
@@ -53,3 +60,10 @@ class CellFlagged(Enum):
     """
     FLAG    = True
     NO_FLAG = False
+
+class CellRevealed(Enum):
+    """
+        Use to set and determine if a cell has been revealed
+    """
+    REVEALED = True
+    NO_REVEAL = False
