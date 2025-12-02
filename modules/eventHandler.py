@@ -29,6 +29,9 @@ class State:
         self._mode = m
 
 # Get basic event handler going!
+
+
+
 class EventHandler():
 
     class ActionType():
@@ -114,3 +117,6 @@ class EventHandler():
         return self._make_action(coord, action)
     
     
+    def get_action(self):
+        
+        for event in event_queue

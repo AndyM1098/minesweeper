@@ -1,11 +1,9 @@
 import pygame
 from modules.grid import Grid
-from pygame.locals import *
 from modules.settings import Settings
 from modules.eventHandler import EventHandler
 from modules.eventHandler import State
 from modules.game import Game
-
 from modules.enums import Action
 from typing import Tuple
 import random
@@ -67,11 +65,13 @@ class App:
         pygame.quit()
 
     def on_execute(self):
-        
+        a_e: EventHandler.ActionType = None # type: ignore
         if self.on_init() == False:
             self._running = False
 
         while( self._running ):
+            
+            a_e = self.event_handler.get_action()
             
             action = Action.NONE
 
