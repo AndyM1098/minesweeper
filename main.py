@@ -4,6 +4,7 @@ from pygame.locals import *
 from modules.settings import Settings
 from modules.eventHandler import EventHandler
 from modules.eventHandler import State
+from modules.game import Game
 
 from modules.enums import Action
 from typing import Tuple
@@ -11,39 +12,32 @@ import random
 
 class App:
     def __init__(self):
-        self._running = True
-        self._display_surf: pygame.Surface | None = None
-        self.settings: Settings = None
-
-        self.size: Tuple[int, int] = (0, 0)
-        self.clock = None
-
-        self.grid: Grid = None
-        self.event_handler:EventHandler = None
-
-    def on_init(self):
+        
+        # Init pygame
         pygame.init()
         pygame.display.init()
-        # Get settings
-        self.settings = Settings()
+        
+        #Init settings
+        self.settings: Settings = Settings()
         random.seed(self.settings.seed)
 
-        # Set display based on settings!
-        self._display_surf = pygame.display.set_mode((self.settings.grid_width, self.settings.grid_height), pygame.HWSURFACE | pygame.DOUBLEBUF)
-        self._running = True
-
-        # Set up clock
+        # Set display surface. --> Might make this it's own thing to manage the surface portion. 
+        self._display_surf: pygame.Surface = pygame.display.set_mode((self.settings.grid_width, self.settings.grid_height), pygame.HWSURFACE | pygame.DOUBLEBUF)
+        
+        self.size: Tuple[int, int] = (0, 0)
         self.clock = pygame.time.Clock()
 
-        # Set up the grid!
-        self.grid = Grid()
-        self.grid.on_init(self.settings, self) # Need to change this to pass in like a config object. I don't like this one bit. 
+        self.game:Game = Game()
+        self.event_handler:EventHandler = EventHandler()
 
-        self.event_handler = EventHandler()
-
+        self._running = True
         pygame.display.flip()
 
-        return True
+        return
+    
+    # Returns whether app is running or not!
+    def on_init(self):
+        return self._running == True
 
     def on_event(self, event):
         coords, action = self.event_handler.process_event(event)
@@ -67,9 +61,7 @@ class App:
     def on_render(self):
         self.grid.update_render()
         pygame.display.flip()
-        # self.clock.tick(self.settings.frame_rate)
-        
-        pass
+        return
     
     def on_cleanup(self):
         pygame.quit()

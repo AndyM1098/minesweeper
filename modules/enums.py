@@ -15,6 +15,8 @@ class RevealColors(Enum):
     NOT_REVEALED = (125,125,125)
     FLAGGED = (225, 225, 225)
 
+    LOWER_RIGHT_CORNER_CELL = (75, 254, 62)
+
     # Define regulary used values perhaps...?
     WHITE = (255, 255, 255)
     RED = (255, 0, 0)

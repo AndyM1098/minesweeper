@@ -28,11 +28,19 @@ class State:
         assert isinstance(m, Mode)
         self._mode = m
 
-
+# Get basic event handler going!
 class EventHandler():
 
+    class ActionType():
+        def __init__(self, coords: Tuple[int, int], action: Action):
+            self.action = action
+            self.coords = coords
+            return
+        def __str__(self):
+            return f'ActionType(action={self.action}, coords={self.coords})'
+
     def __init__(self):
-        self.current_state = State()
+        self.state = State()
 
     def _validate_event(self, e: pygame.event.Event) -> None:
         if not isinstance(e, pygame.event.Event):
@@ -50,7 +58,7 @@ class EventHandler():
         # Test for mouse events
         elif event.type == pygame.MOUSEMOTION:
             # Mouse is clicked down!
-            if self.current_state.left_down or self.current_state.right_down:
+            if self.state.left_down or self.state.right_down:
                 ACTION = Action.DRAG
             else:
                 ACTION = ACTION.NONE
@@ -60,18 +68,18 @@ class EventHandler():
             #   This will essentially make sure that the 
             #   current cell we are on is highlighted or something
             if event.button == MouseButtons.LEFT.value:
-                self.current_state.left_down = True
+                self.state.left_down = True
             elif event.button == MouseButtons.RIGHT.value:
-                self.current_state.right_down = True
+                self.state.right_down = True
             coords = event.pos
             ACTION = Action.DRAG
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == MouseButtons.LEFT.value:
-                self.current_state.left_down = False
+                self.state.left_down = False
                 ACTION = Action.REVEAL
                 print("ACTION: REVEAL")
             elif event.button == MouseButtons.RIGHT.value:
-                self.current_state.right_down = False
+                self.state.right_down = False
                 ACTION = Action.FLAG
                 print("ACTION: FLAG")
             coords = event.pos
@@ -85,18 +93,24 @@ class EventHandler():
                 ACTION = Action.NONE
         
         
-        self.current_state.action = ACTION
+        self.state.action = ACTION
         
         if ACTION == Action.DRAG:
-            self.current_state.mode = Mode.DRAG
+            self.state.mode = Mode.DRAG
         else:
-            self.current_state.mode = Mode.NONE
+            self.state.mode = Mode.NONE
         
-
         return coords, ACTION
     
-    def process_event(self, event: pygame.event.Event):
+    def _make_action(self, coord: Tuple[int, int], action: Action):
+        assert isinstance(coord, Tuple[int, int])
+        assert isinstance(action, Action)
+        return EventHandler.ActionType(coord, action)
+    
+    def process_event(self, event: pygame.event.Event) -> ActionType:
         # This should return a value, with a coordinate!
         self._validate_event(event)
         coord, action = self._parse_event(event)
-        return coord, action
+        return self._make_action(coord, action)
+    
+    

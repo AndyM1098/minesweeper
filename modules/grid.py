@@ -70,7 +70,7 @@ class GridMetaData:
 
         # Set the direction of each neighbor
         #   This also defines the order of the visit
-        #   If the user users for i in self.cell_neighbors.
+        #   If the user users for I in self.cell_neighbors.
         
         self.cell_neighbors = [v.value for v in list(cell_neighbor_increments)]
 
@@ -78,7 +78,7 @@ class GridMetaData:
 
         return
     
-    def set_mines(self, seed: int = None):
+    def set_mines(self):
     
         # Clear all mines!
         self.mine_ids.clear()
@@ -103,94 +103,109 @@ class Grid:
         The grid is comprised of a 2d array of cells.
 
     """
-    def __init__(self):
+    # todo
+    #   Fix parameter list!
+    def __init__(self, App: pygame.Surface, settings: Settings):
         
         # Contains the grid metadata
-        self.metadata: GridMetaData = None
-
-        # 2d matrix of Cells representing each cell!
-        self.grid: List[List[Union[MineCell, EmptyCell]]] = None
+        self.metadata: GridMetaData = GridMetaData()
+        self.metadata.on_init(App._display_surf, settings)
 
         # Cell groups
-        self.cell_group: pygame.sprite.Group = None
-        self.mine_group: pygame.sprite.Group = None
+        self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
+        self.mine_group: pygame.sprite.Group = pygame.sprite.Group()
 
-        #Group of cells that will need to be rendered!
-        self.render_queue: pygame.sprite.Group = None
-        #Flag to determine whether or not render_queue empty
+        # Group of cells that will need to be rendered!
+        self.render_queue: pygame.sprite.Group = pygame.sprite.Group()
+        # Flag to determine whether or not render_queue empty
         self._rq_empty: bool = True
+
+        # 2d matrix of Cells representing each cell!
+        self.grid: List[List[Union[MineCell, EmptyCell]]] = self._init_grid()
+        self._grid_init = True
 
         return
 
-    def _init_metadata(self, settings: Settings, App):
-        self.metadata = GridMetaData()
-        self.metadata.on_init(App._display_surf, settings)
-        return True
+    # getters
+    @property
+    def rq_empty(self)-> bool:
+        return self._rq_empty
     
+    def get_render_queue(self)-> pygame.sprite.Group:
+        return self.render_queue
+
+    # Utilities
     def get_grid_coords_from_cell_num(self, cell_num: int)->Tuple[int, int]:
         r = cell_num // self.metadata.num_columns
         c = cell_num % self.metadata.num_columns
         return r, c
+    """
 
-    def _init_grid(self):
+        Below are functions used in __init__()
+    
+    """
+    def _init_grid(self) -> List[List[Cell]]:
         
-        self.grid = [[None for _ in range(0, self.metadata.num_columns)] for _ in range(0, self.metadata.num_rows)]
+        ret_grid = [
+                        [
+                            None for _ in range(0, self.metadata.num_columns)
+                        ]
+                            for _ in range(0, self.metadata.num_rows)
+                    ]
         
-        # First set all bombs!
-        for m in self.mine_group:
-            row, col = self.get_grid_coords_from_cell_num(m.id)
+        self._init_mines(ret_grid)
+        self._init_empty(ret_grid)
 
-            self.grid[row][col] = MineCell(m.id, self.compute_cell_pos(row, col), self.metadata.cell_size, row, col)
-            self.cell_group.add(self.grid[row][col])
-            self.render_queue.add(self.grid[row][col])
-        
-        if(len(self.render_queue) > 0):
-            self._rq_empty = False
-        
-        # Next set all Empty Cells!
+        # Once grid is set, we want to render every cell made!
+        self.render_queue.add(self.cell_group)
+        self._rq_empty = len(self.render_queue) == 0
 
-        for i in range(0, self.metadata.num_rows):
-            for j in range(0, self.metadata.num_columns):
+        return ret_grid
+    
+    def _init_mines(self, g: List[List[Cell]]):
+
+        self.metadata.set_mines(seed=1)
+        cell_size = self.metadata.cell_size
+
+        for id in self.metadata.mine_ids:
+            r, c = self.id_to_grid_coords(id)
+            new_mine = MineCell(id,
+                                  self.compute_cell_pos(r, c),
+                                  cell_size,
+                                  r,
+                                  c,)
                 
-                if self.grid[i][j] == None:
-                    self.grid[i][j] = EmptyCell(i * self.metadata.num_columns + j,
-                                                self.compute_cell_pos(i, j),
-                                                self.metadata.cell_size, i, j)
-                    self.cell_group.add(self.grid[i][j])
-                    self.render_queue.add(self.grid[i][j])
-                    self._rq_empty = False
-        
+            g[r][c] = new_mine
+            self.mine_group.add(new_mine)
+            self.cell_group.add(new_mine)
+
+        return True
+          
+    def _init_empty(self, g: List[List[Cell]]):
+
+        for r in range(0, self.metadata.num_rows):
+            for c in range(0, self.metadata.num_columns):
+                
+                if g[r][c] == None:
+                    cell_id = r * self.metadata.num_columns + c
+                    cell_pos = self.compute_cell_pos(r, c)
+                    
+                    new_cell = EmptyCell(cell_id,
+                                            cell_pos,
+                                            self.metadata.cell_size,
+                                            r,
+                                            c,)
+                    
+                    g[r][c] = new_cell
+                    self.cell_group.add(new_cell)
+
         print(f"Lower Right Cell info:")
         print(f"\tpos = {self.grid[-1][-1].rect.x, self.grid[-1][-1].rect.y}")
         print(f"\tcell size = {self.grid[-1][-1].rect.w, self.grid[-1][-1].rect.h}")
         print(f"\tScreen size: {self.metadata.parent_screen.get_size()}")
         
         # print(f"\tpos = {self.grid[-1][-1].grid_r, self.grid[-1][-1].grid_c}\n")
-        
-        
-        # sys.exit(0)
-        
         return
-    
-    def _init_groups(self):
-        self.cell_group = pygame.sprite.Group()
-        self.mine_group = pygame.sprite.Group()
-        self.render_queue = pygame.sprite.Group()
-        return True
-
-    def _init_mines(self):
-
-        self.metadata.set_mines(seed=1)
-        mines = []
-
-        for mine_id in self.metadata.mine_ids:
-            r, c = self.convert_id_to_grid_coords(mine_id)
-            mines.append(MineCell(mine_id, self.compute_cell_pos(r, c), self.metadata.cell_size, r, c))
-
-        self.mine_group.add(mines)
-        self.cell_group.add(mines)
-
-        return True
 
     def _determine_neighbor_cells(self):
         """
@@ -213,47 +228,20 @@ class Grid:
 
                 if 0 <= nr < n and 0 <= nc < m and isinstance(self.grid[nr][nc], EmptyCell):
                     self.grid[nr][nc].increment_mine_count()
-
+    
+    
+    
     def _reveal_cells(self):
         for r in range(0, self.metadata.num_rows):
             for c in range(0, self.metadata.num_columns):
                 self.grid[r][c].reveal_cell()
         return
-
-    def on_init(self, settings: Settings, App):
-        
-        self._init_metadata(settings, App)
-        self._init_groups()
-        self._init_mines()
-        self._init_grid()
-        self._determine_neighbor_cells()
-        
-        # self._reveal_cells()
-        self.update_render()
-        return
     
-    def convert_id_to_grid_coords(self, cell_id: int)-> Tuple[int, int]:
-        row = cell_id // self.metadata.num_columns
-        col = cell_id % self.metadata.num_columns
-        return row, col
-    
-    def is_rq_empty(self)-> bool:
-        return len(self.render_queue) == 0
+    def id_to_grid_coords(self, cell_id: int)-> Tuple[int, int]:
+        r = cell_id // self.metadata.num_columns
+        c = cell_id % self.metadata.num_columns
+        return r, c
 
-    def determine_cell_size(self)-> Tuple[int, int]:
-        """
-            Based on the smallest dimension. We will make all cells the same size.
-        """
-
-        #First determine smallest dimension
-
-        smallest_dim = min(self.metadata.parent_screen.get_width(), self.metadata.parent_screen.get_height())
-
-        largest_cell_dim = min(self.metadata.num_columns, self.metadata.num_rows)
-
-        cell_size = int(smallest_dim / largest_cell_dim)
-
-        return cell_size
 
     def compute_offset(self)-> Tuple[int, int]:
         
@@ -363,8 +351,8 @@ class Grid:
         return True
 
     def get_cell_from_id(self, cell_id: int):
-        row, col = self.convert_id_to_grid_coords(cell_id)
-        return self.grid[row][col]
+        r, c = self.id_to_grid_coords(cell_id)
+        return self.grid[r][c]
 
 
     def update_logic(self, sprite_num: int, action: Action):
