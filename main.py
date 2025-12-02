@@ -44,10 +44,6 @@ class App:
         pygame.display.flip()
 
         return True
-    
-    @property
-    def get_screen(self)->pygame.Surface | None:
-        return self._display_surf
 
     def on_event(self, event):
         coords, action = self.event_handler.process_event(event)
@@ -60,7 +56,8 @@ class App:
             sprite_num = self.grid.get_cell_from_coords(coords)
             self.grid.update_logic(sprite_num, action)
         elif action == Action.DRAG:
-            pass        
+            # TODO
+            pass
         elif action == Action.FLAG:
             print("Begin Flag procedure!")
             sprite_num = self.grid.get_cell_from_coords(coords)
@@ -68,10 +65,9 @@ class App:
         return
     
     def on_render(self):
-        
         self.grid.update_render()
         pygame.display.flip()
-        self.clock.tick(self.settings.frame_rate)
+        # self.clock.tick(self.settings.frame_rate)
         
         pass
     
@@ -82,7 +78,7 @@ class App:
         
         if self.on_init() == False:
             self._running = False
-        
+
         while( self._running ):
             
             action = Action.NONE
@@ -95,7 +91,6 @@ class App:
                     continue
             
             if action is not Action.NONE:
-                
                 self.on_loop(coords, action)
                 self.on_render()
 

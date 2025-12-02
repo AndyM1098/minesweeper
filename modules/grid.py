@@ -26,7 +26,7 @@ class GridMetaData:
         self.num_flags:int  = 0
         self.mine_ids: List[int] = []
 
-        self.parent_screen: pygame.Surface = None
+        self.parent_screen: pygame.Surface  = None
 
         self.cell_group: pygame.sprite.Group = None
 
@@ -160,6 +160,16 @@ class Grid:
                     self.render_queue.add(self.grid[i][j])
                     self._rq_empty = False
         
+        print(f"Lower Right Cell info:")
+        print(f"\tpos = {self.grid[-1][-1].rect.x, self.grid[-1][-1].rect.y}")
+        print(f"\tcell size = {self.grid[-1][-1].rect.w, self.grid[-1][-1].rect.h}")
+        print(f"\tScreen size: {self.metadata.parent_screen.get_size()}")
+        
+        # print(f"\tpos = {self.grid[-1][-1].grid_r, self.grid[-1][-1].grid_c}\n")
+        
+        
+        # sys.exit(0)
+        
         return
     
     def _init_groups(self):
@@ -270,29 +280,37 @@ class Grid:
         
         # Do no want to add already proccessed nodes!
         
-        if r < 0 or r >= self.metadata.num_rows or c < 0 or c >= self.metadata.num_columns:
-            return
-        elif v[r][c] == True:
-            return
+        stack: List[Tuple[int, int]] = []
+        _visited = [[False for _ in range(0, self.metadata.num_columns)] for _ in range(0, self.metadata.num_columns)]
+        
+        stack.append((r, c))
+        
+        while(len(stack)):
+            # Get current cell
+            r, c = stack.pop()
+            
+            if r < 0 or r >= self.metadata.num_rows or c < 0 or c >= self.metadata.num_columns:
+                continue
+            elif v[r][c] == True:
+                continue
 
-        v[r][c] = True
+            v[r][c] = True
 
-        if self.grid[r][c].number_of_neighbors > 0:
+            if self.grid[r][c].number_of_neighbors > 0:
+                self.grid[r][c].reveal_cell()
+                self.render_queue.add(self.grid[r][c])
+                self._rq_empty = False
+                continue
+            else:
+                for dir in self.metadata.cell_neighbors:
+                    stack.append((r + dir[0], c + dir[1]))
+                
             self.grid[r][c].reveal_cell()
             self.render_queue.add(self.grid[r][c])
             self._rq_empty = False
-            return
         
-        for dir in self.metadata.cell_neighbors:
-            self._update_logic_empty_cells_rec(v, r + dir[0], c + dir[1])
-        
-        self.grid[r][c].reveal_cell()
-        self.render_queue.add(self.grid[r][c])
-        
-        self._rq_empty = False
-        
-        self.update_render()
         return
+    
     def _update_logic_reveal_mines(self):
         """
             We essentially want to update ALL mines here!

@@ -45,7 +45,7 @@ class Cell(pygame.sprite.Sprite):
         self._revealed: CellRevealed = CellRevealed.NO_REVEAL
         self._flag = CellFlagged.NO_FLAG
 
-        print(f"Added cell: {self.id}\n\tpos: {self.rect.topleft}\n\tsize: {self.image.get_size()}\n")
+        #print(f"Added cell: {self.id}\n\tpos: {self.rect.topleft}\n\tsize: {self.image.get_size()}\n")
 
         # if self.id == 2:
         #     import sys

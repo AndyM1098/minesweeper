@@ -2,9 +2,9 @@ from dataclasses import dataclass
 
 @dataclass
 class Settings:
-    num_rows: int = 20
-    num_columns: int = 20
-    grid_width: int = 1020
+    num_rows: int = 100
+    num_columns: int = 100
+    grid_width: int = 1080
     grid_height: int = 800
     cell_height = None
     cell_width = None
