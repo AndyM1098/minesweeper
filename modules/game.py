@@ -17,14 +17,14 @@ class Game():
             Will contain ALL the game information / modules inclduing logic and rendering modules
         """
         self._settings = Settings()
-        self._grid = Grid(self._settings)
-        self._renderer = Render(self._grid)
-        self._logic = Logic(self._grid)
+        # self._grid = Grid(self._settings)
+        # self._renderer = Render(self._grid)
+        # self._logic = Logic(self._grid)
         
         return
     
-    def post_action(self, a: Action):
-        if a == Action.REVEAL:
+    # def post_action(self, a: Action):
+        # if a == Action.REVEAL:
             
         # Take
         pass

@@ -9,7 +9,6 @@ class Mode(Enum):
     NONE = auto()
     REVEAL = auto()
 
-
 @dataclass
 class State:
     left_down: bool = False
@@ -117,6 +116,6 @@ class EventHandler():
         return self._make_action(coord, action)
     
     
-    def get_action(self):
+    # def get_action(self):
         
-        for event in event_queue
+    #     for event in event_queue

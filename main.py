@@ -38,7 +38,10 @@ class App:
         return self._running == True
 
     def on_event(self, event):
-        coords, action = self.event_handler.process_event(event)
+        if event.type == pygame.QUIT:
+            return 1
+        return 0
+        # coords, action = self.event_handler.process_event(event)
         return coords, action
     
     def on_loop(self, coords, action: bool):
@@ -57,7 +60,6 @@ class App:
         return
     
     def on_render(self):
-        self.grid.update_render()
         pygame.display.flip()
         return
     
@@ -71,20 +73,20 @@ class App:
 
         while( self._running ):
             
-            a_e = self.event_handler.get_action()
+            #a_e = self.event_handler.get_action()
             
             action = Action.NONE
 
             for event in pygame.event.get():
-                coords, action = self.on_event(event)
+                action = self.on_event(event)
 
-                if action == Action.QUIT:
+                if action == 1:
                     self._running = False
                     continue
             
-            if action is not Action.NONE:
-                self.on_loop(coords, action)
-                self.on_render()
+            # if action is not Action.NONE:
+            #     self.on_loop(coords, action)
+            self.on_render()
 
         self.on_cleanup()
  
