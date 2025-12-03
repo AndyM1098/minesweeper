@@ -8,6 +8,6 @@ class Settings:
     grid_height: int = 800
     cell_height = None
     cell_width = None
-    frame_rate: int = 120
+    frame_rate: int = 240
     num_mines: int = 50
     seed = 1

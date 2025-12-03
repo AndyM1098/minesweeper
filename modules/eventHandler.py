@@ -29,8 +29,6 @@ class State:
 
 # Get basic event handler going!
 
-
-
 class EventHandler():
 
     class ActionType():
@@ -41,22 +39,32 @@ class EventHandler():
         def __str__(self):
             return f'ActionType(action={self.action}, coords={self.coords})'
 
-    def __init__(self):
+    def __init__(self, event_function: callable = pygame.event.get):
         self.state = State()
+        self._event_function = event_function
+        return
 
-    def _validate_event(self, e: pygame.event.Event) -> None:
-        if not isinstance(e, pygame.event.Event):
-            raise TypeError(f"Expected pygame.event.Event, got {type(e)}")
-    
+    def get_event(self):
+        return next(self._get_event())
+
+    def _get_event(self) -> any:
+        while True:
+            for e in self._event_function():
+                yield e
+
     def _parse_event(self, event):
         
         coords: Tuple[int, int] = (-1, -1)
         ACTION: Action = Action.NONE
-
-        # Quite the app! --> Implemented!
+        print(event)
+        
+        # Quite the app!
         if event.type == pygame.QUIT:
             ACTION = Action.QUIT
-        
+        elif event.type == pygame.WINDOWCLOSE:
+            ACTION = Action.QUIT
+
+
         # Test for mouse events
         elif event.type == pygame.MOUSEMOTION:
             # Mouse is clicked down!
@@ -70,20 +78,22 @@ class EventHandler():
             #   This will essentially make sure that the 
             #   current cell we are on is highlighted or something
             if event.button == MouseButtons.LEFT.value:
+                assert self.state.left_down == False
                 self.state.left_down = True
             elif event.button == MouseButtons.RIGHT.value:
+                assert self.state.right_down == False
                 self.state.right_down = True
             coords = event.pos
             ACTION = Action.DRAG
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == MouseButtons.LEFT.value:
+                assert self.state.left_down == True
                 self.state.left_down = False
                 ACTION = Action.REVEAL
-                print("ACTION: REVEAL")
             elif event.button == MouseButtons.RIGHT.value:
+                assert self.state.right_down == True
                 self.state.right_down = False
                 ACTION = Action.FLAG
-                print("ACTION: FLAG")
             coords = event.pos
         # Test for keyboard events!
         elif event.type == pygame.KEYDOWN:
@@ -93,7 +103,6 @@ class EventHandler():
             else:
                 print("Sorry, key not registered!")
                 ACTION = Action.NONE
-        
         
         self.state.action = ACTION
         
@@ -105,7 +114,7 @@ class EventHandler():
         return coords, ACTION
     
     def _make_action(self, coord: Tuple[int, int], action: Action):
-        assert isinstance(coord, Tuple[int, int])
+        assert isinstance(coord, tuple)
         assert isinstance(action, Action)
         return EventHandler.ActionType(coord, action)
     
@@ -115,7 +124,39 @@ class EventHandler():
         coord, action = self._parse_event(event)
         return self._make_action(coord, action)
     
+    def get_action(self):
+        event = self.get_event()
+        assert self._validate_event(event) == True
+        coord, action = self._parse_event(event)
+        assert self._validate_coord(coord) == True
+        return self._make_action(coord, action)
     
-    # def get_action(self):
-        
-    #     for event in event_queue
+    # Validation functions
+    def _validate_event(self, e: pygame.event.Event) -> bool:
+        if not isinstance(e, pygame.event.Event):
+            raise TypeError(f"Expected pygame.event.Event, got {type(e)}")
+        return True
+    
+    def _validate_coord(self, coord: Tuple[int, int]) -> bool:
+        assert(
+            isinstance(coord, tuple) and
+            len(coord) == 2 and
+            isinstance(coord[0], int) and
+            isinstance(coord[1], int)
+        )
+
+        return True
+"""
+
+
+What we essentially want for the event handler to do is get events from the pygame queue, process event
+which entails parsing the event. We will return a eventAction object that contains more readable information.
+
+The event handler should be able to take in a function that returns event objects.
+
+    That function will be called in a generator function. 
+
+
+
+
+"""
