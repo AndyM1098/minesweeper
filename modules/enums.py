@@ -51,9 +51,9 @@ class Action(Enum):
     QUIT    = auto()
 
 class MouseButtons(Enum):
-    LEFT    = 1
-    MIDDLE  = 2
-    RIGHT   = 3
+    LEFT    = 0
+    MIDDLE  = 1
+    RIGHT   = 2
 
 
 class CellFlagged(Enum):

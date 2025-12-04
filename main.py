@@ -79,7 +79,7 @@ class App:
                 self._running = False
                 continue
             
-            print(a_e, "\n\n\n")
+            # print(a_e, "\n\n\n")
 
             # self.game.apply_action(a_e)
             # self.game.update_render()
