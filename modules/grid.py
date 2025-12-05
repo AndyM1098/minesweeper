@@ -4,8 +4,9 @@ import pygame
 import random
 import sys
 from .settings import Settings
-from .enums import RevealColors, cell_neighbor_increments, Action
+from .enums import RevealColors, cell_neighbor_increments
 from .enums import CellFlagged, CellRevealed
+from .eventHandler import Action
 
 
 class GridMetaData:

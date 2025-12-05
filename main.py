@@ -1,7 +1,7 @@
 import pygame
 from modules.grid import Grid
 from modules.settings import Settings
-from modules.eventHandler import EventHandler, Action
+from modules.eventHandler import EventHandler, ActionType, Action
 from modules.eventHandler import State
 from modules.game import Game
 from typing import Tuple
@@ -67,7 +67,7 @@ class App:
 
     def on_execute(self):
         
-        a_e: EventHandler.ActionType = None # type: ignore
+        a_e: Action = None # type: ignore
         
         if self.on_init() == False:
             self._running = False
@@ -97,5 +97,8 @@ class App:
         self.on_cleanup()
  
 if __name__ == "__main__" :
+    print(pygame.BUTTON_LEFT)
+    print(pygame.BUTTON_MIDDLE)
+    print(pygame.BUTTON_RIGHT)
     theApp = App()
     theApp.on_execute()

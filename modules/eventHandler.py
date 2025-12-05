@@ -40,9 +40,9 @@ class Action():
         return f'Action(action={self.action}, coords={self.coords})'
 
 class MouseButtons(Enum):
-    LEFT    = 0
-    MIDDLE  = 1
-    RIGHT   = 2
+    LEFT    = pg.BUTTON_LEFT - 1
+    MIDDLE  = pg.BUTTON_MIDDLE - 1
+    RIGHT   = pg.BUTTON_RIGHT - 1
 
 class ActionType(Enum):
     REVEAL  = auto()
@@ -64,84 +64,122 @@ class EventHandler():
         
         # set up way to accept these. 
         pg.event.set_blocked(pg.MOUSEMOTION)
+        self._valid_events = (pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP, pg.QUIT, pg.WINDOWCLOSE, pg.KEYDOWN, pg.KEYUP)
+
+        self._event_type = pg.event.Event
 
         return
 
-    def _parse_event(self, event):
+    def _parse_button_down(self, e: pg.event.Event) -> ActionType:
+        next_action = ActionType.NONE
+
+        if e.button == MouseButtons.LEFT.value:
+            assert not self.state.button_state[MouseButtons.LEFT.value]
+            self.state.button_state[MouseButtons.LEFT.value] = True
+            next_action = ActionType.DRAG
+        elif e.button == MouseButtons.RIGHT.value:
+            assert not self.state.button_state[MouseButtons.RIGHT.value]
+            self.state.button_state[MouseButtons.RIGHT.value] = True
+            next_action = ActionType.DRAG
+
+        return next_action
+
+    def _parse_button_up(self, e: pg.event.Event) -> ActionType:
+        next_action = ActionType.NONE
+        if e.button == MouseButtons.LEFT.value:
+            assert self.state.button_state[MouseButtons.LEFT.value] == True
+            self.state.button_state[MouseButtons.LEFT.value] = False
+            next_action = ActionType.REVEAL
+        elif e.button == MouseButtons.RIGHT.value:
+            assert self.state.button_state[MouseButtons.RIGHT.value] == True
+            self.state.button_state[MouseButtons.RIGHT.value] = False
+            next_action = ActionType.FLAG
+        return next_action
+
+    def _parse_event(self, e: pg.event.Event):
 
         coords: Tuple[int, int] = (-1, -1)
-        ACTION: ActionType = ActionType.NONE
-        print(event)
-        
-        # Quite the app!
-        if event.type == pg.QUIT:
-            ACTION = ActionType.QUIT
-        elif event.type == pg.WINDOWCLOSE:
-            ACTION = ActionType.QUIT
+        coords_valid: bool = True
+        coords, coords_valid = self._get_event_pos(e)
+        next_action: ActionType = ActionType.NONE
 
-        elif event.type == pg.MOUSEBUTTONDOWN:
-            # If user presses down. We go into drag mode.
-            #   This will essentially make sure that the 
-            #   current cell we are on is highlighted or something
-            # print("DOWNN")
-            # print(event.button)
-            # exit(0)
-            if event.button == MouseButtons.LEFT.value:
-                assert self.state.button_state[MouseButtons.LEFT.value] == False
-                self.state.button_state[MouseButtons.LEFT.value] = True
-            elif event.button == MouseButtons.RIGHT.value:
-                assert self.state.button_state[MouseButtons.RIGHT.value] == False
-                self.state.button_state[MouseButtons.RIGHT.value] = True
-            coords = event.pos
-            ACTION = ActionType.DRAG
-        elif event.type == pg.MOUSEBUTTONUP:
-            if event.button == MouseButtons.LEFT.value:
-                assert self.state.button_state[MouseButtons.LEFT.value] == True
-                self.state.button_state[MouseButtons.LEFT.value] = False
-                ACTION = ActionType.REVEAL
-            elif event.button == MouseButtons.RIGHT.value:
-                assert self.state.button_state[MouseButtons.RIGHT.value] == True
-                self.state.button_state[MouseButtons.RIGHT.value] = False
-                ACTION = ActionType.FLAG
-            coords = event.pos
+        # Quite the app!
+        if e.type in (pg.QUIT, pg.WINDOWCLOSE):
+            next_action = ActionType.QUIT
+
+        # Check mouse button down
+        elif e.type == pg.MOUSEBUTTONDOWN:
+            next_action = self._parse_button_down(e)
+        elif e.type == pg.MOUSEBUTTONUP:
+            next_action == self._parse_button_up(e)
 
         # Test for keyboard events!
-        elif event.type == pg.KEYDOWN:
-            if event.key == pg.K_r:
+        elif e.type == pg.KEYDOWN:
+            if e.key == pg.K_r:
                 print("RESTART GAME BOARD!")
-                ACTION = ActionType.RESTART
+                next_action = ActionType.RESTART
             else:
                 print("Sorry, key not registered!")
-                ACTION = ActionType.NONE
+                next_action = ActionType.NONE
         
-        self.state.action = ACTION
+        self.state.action = next_action
         
-        if ACTION == ActionType.DRAG:
+        if next_action == ActionType.DRAG:
             self.state.mode = Mode.DRAG
         else:
             self.state.mode = Mode.NONE
-        
-        return coords, ACTION
+        print(coords)
+        print(next_action)
+        return coords, next_action
     
     def get_action(self) -> Action:
        return self._get_action()
     
     def _check_mouse_movement(self, nc: Tuple[int,int]):
         """
-            Check if the mouse movement
+            Check if mouse has moved since last frame.
         """
         if nc[0] == self.state.pos[0] and nc[1] == self.state.pos[1]:
             return False
         return True
     
-    def _get_event_pos(self, e: pg.event.Event):
-        pos: Tuple[int, int] | None = None
-        try:
-            pos = e.pos
-        except AttributeError as error:
-            print(error)
-        return pos
+    def _get_event_pos(self, e: pg.event.Event)-> Tuple[Tuple[int, int], bool]:
+        """
+        Docstring for _get_event_pos
         
+        :param self: EventHandler
+        :param e: pygame event
+        :type e: pg.event.Event
+        :return: Description
+        :rtype: Tuple[Tuple[int, int], bool]
+        """
+        try:
+            e.pos
+        except AttributeError as err:
+            return (-1, -1), False
+        except Exception as err:
+            print(err)
+            exit(1)
+        
+        return e.pos, True
+    
+
+    def has_mouse_moved(self, e: pg.event.Event) -> bool:
+        return self._has_mouse_moved(e)
+
+    def _has_mouse_moved(self, e: pg.event.Event) -> bool:
+        m_move_flag = False
+        m_pos, m_valid = self._get_event_pos(e)
+
+        if m_valid is True:
+            if self._check_mouse_movement(m_pos) is True:
+                m_move_flag = True
+            m_move_flag = False
+        
+        return m_move_flag
+    
+
+
     def _get_action(self) -> Action: 
         """
             We want to implement a way to constantly get the mouse state!
@@ -160,12 +198,11 @@ class EventHandler():
         event_valid = self._validate_event(event)
         
         # Did Mouse move since last frame
-        m_move_flag = self._check_mouse_movement(self._get_event_pos(event))
-        # If a valid event, go ahead and see if it is an event we need
-        #   to proccess, or update state. 
-        #       Like, going off screen, does that clear what we have on the screen, or what
+        has_mouse_moved = self.has_mouse_moved(event)
+
         if event_valid is True:
             coord, action = self._parse_event(event)
+            print("cord: ", coord)
             assert self._validate_coord(coord) == True
             print(event)
         else:
@@ -178,13 +215,11 @@ class EventHandler():
         pos = self.get_mouse_pos()
         
         # self._get_mouse_action(pos)
-        
+        print(action)
         return self._make_action(coord, action)
     
     def _make_action(self, c: Tuple[int, int], a: ActionType):
-        assert isinstance(c, tuple)
-        assert isinstance(c[0], int)
-        assert isinstance(c[1], int)
+        assert self._validate_coord(c) == True
         assert isinstance(a, ActionType)
         return Action(action = a, coords=c)
     
@@ -210,15 +245,16 @@ class EventHandler():
             if len(event_list) == 0:
                 yield None
             for e in event_list:
+                print(e)
                 yield e
 
     """
         Validation functions
     """
-    def _validate_event(self, e: pg.event.Event | None) -> bool:
-        if e is None:
+    def _validate_event(self, e: pg.event.Event) -> bool:
+        if not isinstance(e, self._event_type):
             return False
-        if not isinstance(e, pg.event.Event):
+        if e.type not in self._valid_events:
             return False
         return True
     
