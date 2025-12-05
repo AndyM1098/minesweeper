@@ -1,10 +1,9 @@
 import pygame
 from modules.grid import Grid
 from modules.settings import Settings
-from modules.eventHandler import EventHandler
+from modules.eventHandler import EventHandler, Action
 from modules.eventHandler import State
 from modules.game import Game
-from modules.enums import Action
 from typing import Tuple
 import random
 
@@ -46,13 +45,13 @@ class App:
     
     def on_loop(self, coords, action: bool):
 
-        if(action == Action.REVEAL):
+        if(action == ActionType.REVEAL):
             sprite_num = self.grid.get_cell_from_coords(coords)
             self.grid.update_logic(sprite_num, action)
-        elif action == Action.DRAG:
+        elif action == ActionType.DRAG:
             # TODO
             pass
-        elif action == Action.FLAG:
+        elif action == ActionType.FLAG:
             sprite_num = self.grid.get_cell_from_coords(coords)
             self.grid.update_logic(sprite_num, action)
         return
@@ -75,7 +74,7 @@ class App:
 
         while( self._running ):
             a_e = self.event_handler.get_action()
-            if a_e.action == Action.QUIT:
+            if a_e.action == ActionType.QUIT:
                 self._running = False
                 continue
             
@@ -91,7 +90,7 @@ class App:
             #         self._running = False
             #         continue
             
-            # if action is not Action.NONE:
+            # if action is not ActionType.NONE:
             #     self.on_loop(coords, action)
             self.on_render()
 

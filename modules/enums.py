@@ -42,20 +42,6 @@ class cell_neighbor_increments(Enum):
     
     """
 
-class Action(Enum):
-    REVEAL  = 0
-    FLAG    = 1
-    DRAG    = 2
-    NONE    = auto()
-    RESTART = auto()
-    QUIT    = auto()
-
-class MouseButtons(Enum):
-    LEFT    = 0
-    MIDDLE  = 1
-    RIGHT   = 2
-
-
 class CellFlagged(Enum):
     """
         Use to set and determine if a cell has been flagged or not
