@@ -2,22 +2,23 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import List, Tuple
 import pygame as pg
-# from .enums import MouseButtons, ActionType
 from enum import Enum, auto
 from collections.abc import Callable, Iterator
 
 import time
-
 
 class Mode(Enum):
     DRAG = auto()
     NONE = auto()
     REVEAL = auto()
 
-class State:
+class MouseState:
+    """
+        Keeps the current state of input. 
+    """
     button_state: List[bool] = [False, False, False]
     pos: List[int] = [0, 0]
-    on_screen: bool = False
+    on_screen: bool = False # todo implement
     _mode: Mode = Mode.NONE
 
     @property
@@ -111,7 +112,7 @@ class EventHandler():
         elif e.type == pg.MOUSEBUTTONDOWN:
             next_action = self._parse_button_down(e)
         elif e.type == pg.MOUSEBUTTONUP:
-            next_action == self._parse_button_up(e)
+            next_action = self._parse_button_up(e)
 
         # Test for keyboard events!
         elif e.type == pg.KEYDOWN:
@@ -122,7 +123,7 @@ class EventHandler():
                 print("Sorry, key not registered!")
                 next_action = ActionType.NONE
         
-        self.state.action = next_action
+        # self.state.action_type = next_action
         
         if next_action == ActionType.DRAG:
             self.state.mode = Mode.DRAG
