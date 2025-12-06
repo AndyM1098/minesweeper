@@ -40,22 +40,21 @@ class EventHandler():
     class EventConfig():
 
         def __init__(self, 
-                     blocked_events: Set[pg.event.EventType] = {},
-                     logical_events: Set[pg.event.EventType] = {},
-                     screen_events: Set[pg.event.EventType] = {},
-                     mouse_events: Set[pg.event.EventType] = {},
-                     keyboard_events: Set[pg.event.EventType] = {},
+                     blocked_events: Tuple[int, ...] = tuple(),
+                     logical_events: Tuple[int, ...] = tuple(),
+                     window_events: Tuple[int, ...] = tuple(),
+                     mouse_events: Tuple[int, ...] = tuple(),
+                     keyboard_events: Tuple[int, ...] = tuple(),
                     ):
             
-            self._blocked_events: Set[pg.event.EventType] = blocked_events
-            if len(self._blocked_events) > 0:
-                pg.event.set_blocked(self._blocked_events)
+            self.blocked_events: Set[int] = set(blocked_events)
+            if len(self.blocked_events) > 0:
+                pg.event.set_blocked(tuple(self.blocked_events))
             
-            self._logical_events: Set[pg.event.EventType] = logical_events
-            self._screen_events: Set[pg.event.EventType] = screen_events
-            self._mouse_events: Set[pg.event.EventType] = mouse_events
-            self._keyboard_events: Set[pg.event.EventType] = keyboard_events
-            self._event_type: pg.event.EventType = pg.event.Event
+            self.logical_events: Set[int] = set(logical_events)
+            self.window_events: Set[int] = set(window_events)
+            self.mouse_events: Set[int] = set(mouse_events)
+            self.keyboard_events: Set[int] = set(keyboard_events)        
 
     class State:
         """
@@ -72,18 +71,25 @@ class EventHandler():
         self.state = EventHandler.State() # Holds the current state of input
         self._event_function = event_function
         
-        self.config = EventHandler.EventConfig( blocked_events={pg.MOUSEMOTION},
-                                                logical_events={pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP, pg.QUIT, pg.WINDOWCLOSE, pg.KEYDOWN, pg.KEYUP},
-                                                screen_events={},
-                                                mouse_events={pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP},
-                                                keyboard_events={pg.KEYDOWN, pg.KEYUP},
+        self.config = EventHandler.EventConfig( blocked_events=(pg.MOUSEMOTION,),
+                                                logical_events=(pg.MOUSEBUTTONDOWN, 
+                                                                pg.MOUSEBUTTONUP,
+                                                                pg.QUIT,
+                                                                pg.WINDOWCLOSE,
+                                                                pg.KEYDOWN,
+                                                                pg.KEYUP),
+                                                window_events=(),
+                                                mouse_events=(pg.MOUSEBUTTONDOWN,
+                                                              pg.MOUSEBUTTONUP),
+                                                keyboard_events=(pg.KEYDOWN, 
+                                                                 pg.KEYUP),
                                                 )
-                                                
+       
         # Set generators
         self._mouse_pos_gen = self._get_mouse_pos_gen()
         self._event_gen = self._get_event_gen()
 
-        self._parser = self.EventParser(self._valid_events)
+        self._parser = self.EventParser(config = self.config)
 
         return
 
@@ -113,11 +119,11 @@ class EventHandler():
             next_action = ActionType.FLAG
         return next_action
 
-    def _parse_event(self, e: pg.event.Event):
+    def _event_to_action(self, e: pg.event.Event):
 
         coords: Tuple[int, int] = (-1, -1)
         coords_valid: bool = True
-        coords, coords_valid = self._get_event_pos(e)
+        coords, coords_valid = self._parser.get_event_pos()
         next_action: ActionType = ActionType.NONE
 
         # Quite the app!
@@ -262,10 +268,10 @@ class EventHandler():
     
     class EventParser():
 
-        def __init__(self, e: pg.event.Event | None = None):
-            self.event: pg.event.Event | None = e
-            self.strict: bool = False
-            self.valid_events = 
+        def __init__(self, config: EventHandler.EventConfig):
+            self.config = config
+            
+            self.event: pg.event.Event            
             return
         
         def validate_event(self, e: pg.event.Event) -> bool:
@@ -273,20 +279,10 @@ class EventHandler():
         
         def set_current_event(self, e: pg.event.Event):
             self.event = e
-        
-        def get_event_pos(self)-> bool:
-            if not isinstance(self.event, pg.event.Event):
-                return (-1, -1), False
-            try:
-                return self.curr_e.pos, True
-            except AttributeError as err:
-                return (-1, -1), False
-            except Exception as err:
-                print(err)
-                exit(1)
             
         def get_event_type(self) -> int:
             return self.event.type
+        
         
         def get_event_pos(self)-> Tuple[Tuple[int, int], bool]:
             """
@@ -297,7 +293,7 @@ class EventHandler():
                 :rtype: Tuple[Tuple[int, int], bool]
             """
             try:
-                return self.event.pos, True
+                return self.event.pos, True # type: ignore
             except AttributeError as err:
                 return (-1, -1), False
             except Exception as err:
@@ -307,7 +303,10 @@ class EventHandler():
         def is_event_valid(self) -> bool:
             if self.event is None:
                 return False
-            return self.get_event_type() in self.valid_events
+            return self.get_event_type() in self.config.valid_events
+
+        
+        
     # class 
 """
 
