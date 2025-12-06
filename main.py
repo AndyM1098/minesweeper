@@ -2,7 +2,6 @@ import pygame
 from modules.grid import Grid
 from modules.settings import Settings
 from modules.eventHandler import EventHandler, ActionType, Action
-from modules.eventHandler import State
 from modules.game import Game
 from typing import Tuple
 import random

@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Set
 import pygame as pg
 from enum import Enum, auto
 from collections.abc import Callable, Iterator
@@ -12,25 +12,7 @@ class Mode(Enum):
     NONE = auto()
     REVEAL = auto()
 
-class MouseState:
-    """
-        Keeps the current state of input. 
-    """
-    button_state: List[bool] = [False, False, False]
-    pos: List[int] = [0, 0]
-    on_screen: bool = False # todo implement
-    _mode: Mode = Mode.NONE
 
-    @property
-    def mode(self) -> Mode:
-        return self._mode
-    
-    @mode.setter
-    def mode(self, m: Mode) -> bool:
-        if not isinstance(m, Mode):
-            return False
-        self._mode = m
-        return True
 
 @dataclass(frozen=True, slots=True)
 class Action():
@@ -54,20 +36,54 @@ class ActionType(Enum):
     QUIT    = auto()
 
 class EventHandler():
+    
+    class EventConfig():
+
+        def __init__(self, 
+                     blocked_events: Set[pg.event.EventType] = {},
+                     logical_events: Set[pg.event.EventType] = {},
+                     screen_events: Set[pg.event.EventType] = {},
+                     mouse_events: Set[pg.event.EventType] = {},
+                     keyboard_events: Set[pg.event.EventType] = {},
+                    ):
+            
+            self._blocked_events: Set[pg.event.EventType] = blocked_events
+            if len(self._blocked_events) > 0:
+                pg.event.set_blocked(self._blocked_events)
+            
+            self._logical_events: Set[pg.event.EventType] = logical_events
+            self._screen_events: Set[pg.event.EventType] = screen_events
+            self._mouse_events: Set[pg.event.EventType] = mouse_events
+            self._keyboard_events: Set[pg.event.EventType] = keyboard_events
+            self._event_type: pg.event.EventType = pg.event.Event
+
+    class State:
+        """
+            Keeps the current state of input.
+        """
+        button_state: List[bool] = [False, False, False]
+        pos: List[int] = [0, 0]
+        on_screen: bool = False # todo implement
+        mode: Mode = Mode.NONE
+        restart_pending: bool = False 
 
     def __init__(self, event_function: Callable = pg.event.get, ):
-        self.state = State() # Holds the current state of input
+        
+        self.state = EventHandler.State() # Holds the current state of input
         self._event_function = event_function
         
+        self.config = EventHandler.EventConfig( blocked_events={pg.MOUSEMOTION},
+                                                logical_events={pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP, pg.QUIT, pg.WINDOWCLOSE, pg.KEYDOWN, pg.KEYUP},
+                                                screen_events={},
+                                                mouse_events={pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP},
+                                                keyboard_events={pg.KEYDOWN, pg.KEYUP},
+                                                )
+                                                
         # Set generators
         self._mouse_pos_gen = self._get_mouse_pos_gen()
         self._event_gen = self._get_event_gen()
-        
-        # set up way to accept these. 
-        pg.event.set_blocked(pg.MOUSEMOTION)
-        self._valid_events = (pg.MOUSEBUTTONDOWN, pg.MOUSEBUTTONUP, pg.QUIT, pg.WINDOWCLOSE, pg.KEYDOWN, pg.KEYUP)
 
-        self._event_type = pg.event.Event
+        self._parser = self.EventParser(self._valid_events)
 
         return
 
@@ -144,26 +160,9 @@ class EventHandler():
             return False
         return True
     
-    def _get_event_pos(self, e: pg.event.Event)-> Tuple[Tuple[int, int], bool]:
-        """
-        Docstring for _get_event_pos
-        
-        :param self: EventHandler
-        :param e: pygame event
-        :type e: pg.event.Event
-        :return: Description
-        :rtype: Tuple[Tuple[int, int], bool]
-        """
-        try:
-            e.pos
-        except AttributeError as err:
-            return (-1, -1), False
-        except Exception as err:
-            print(err)
-            exit(1)
-        
-        return e.pos, True
     
+
+
 
     def has_mouse_moved(self, e: pg.event.Event) -> bool:
         return self._has_mouse_moved(e)
@@ -179,9 +178,7 @@ class EventHandler():
         
         return m_move_flag
     
-
-
-    def _get_action(self) -> Action: 
+    def _get_action(self) -> Action:
         """
             We want to implement a way to constantly get the mouse state!
             We can in fact create another generator that gets the current mouse state, 
@@ -196,13 +193,13 @@ class EventHandler():
 
         # First get a valid event from the queue
         event: pg.event.Event | None = self.get_event()
-        event_valid = self._validate_event(event)
-        
-        # Did Mouse move since last frame
-        has_mouse_moved = self.has_mouse_moved(event)
-
+        self._parser.set_current_event(event)
+        event_valid = self._parser.is_event_valid()
+        print(event_valid)
+        # If event is valid, assign coords from event
         if event_valid is True:
-            coord, action = self._parse_event(event)
+            coord = self._parser.get_event_pos()
+            m_moved = self._check_mouse_movement(coord)
             print("cord: ", coord)
             assert self._validate_coord(coord) == True
             print(event)
@@ -238,7 +235,9 @@ class EventHandler():
     
     # Event generator
     def get_event(self) -> pg.event.Event | None:
-        return next(self._event_gen)
+        e = next(self._event_gen)
+        self._parser.set_current_event(e)
+        return e
 
     def _get_event_gen(self) -> Iterator[pg.event.Event | None]:
         while True:
@@ -246,18 +245,11 @@ class EventHandler():
             if len(event_list) == 0:
                 yield None
             for e in event_list:
-                print(e)
                 yield e
 
     """
         Validation functions
     """
-    def _validate_event(self, e: pg.event.Event) -> bool:
-        if not isinstance(e, self._event_type):
-            return False
-        if e.type not in self._valid_events:
-            return False
-        return True
     
     def _validate_coord(self, coord: Tuple[int, int]) -> bool:
         if( not isinstance(coord, tuple) or
@@ -267,6 +259,56 @@ class EventHandler():
             ):
             return False
         return True
+    
+    class EventParser():
+
+        def __init__(self, e: pg.event.Event | None = None):
+            self.event: pg.event.Event | None = e
+            self.strict: bool = False
+            self.valid_events = 
+            return
+        
+        def validate_event(self, e: pg.event.Event) -> bool:
+            return isinstance(e, pg.event.Event)
+        
+        def set_current_event(self, e: pg.event.Event):
+            self.event = e
+        
+        def get_event_pos(self)-> bool:
+            if not isinstance(self.event, pg.event.Event):
+                return (-1, -1), False
+            try:
+                return self.curr_e.pos, True
+            except AttributeError as err:
+                return (-1, -1), False
+            except Exception as err:
+                print(err)
+                exit(1)
+            
+        def get_event_type(self) -> int:
+            return self.event.type
+        
+        def get_event_pos(self)-> Tuple[Tuple[int, int], bool]:
+            """
+                :param self: EventHandler
+                :param e: pygame event object. May or may not contain pos, see return type
+                :type e: pg.event.Event
+                :return: If e.pos exists, return pos and True, otherwise (-1, -1), False
+                :rtype: Tuple[Tuple[int, int], bool]
+            """
+            try:
+                return self.event.pos, True
+            except AttributeError as err:
+                return (-1, -1), False
+            except Exception as err:
+                print(err)
+                exit(1)
+        
+        def is_event_valid(self) -> bool:
+            if self.event is None:
+                return False
+            return self.get_event_type() in self.valid_events
+    # class 
 """
 
 
