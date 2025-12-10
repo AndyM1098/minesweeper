@@ -1,1 +1,14 @@
 linux_desktop*
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+venv/
+.env/
+
+# IDE configs
+.vscode/
+.idea/
