@@ -27,7 +27,12 @@ class Game():
         self._config: Game_Config = self.Config(parent_screen, self._settings)
         self._grid: Game_Grid = self.Grid(self._config)
         self._renderer: Game_Render = self.Render(self._grid, self._config)
-        self._logic: Game_Logic = self.Logic(self._grid, self._config, self._renderer)
+        self._render_group = self._renderer.get_render_group()
+        self._logic: Game_Logic = self.Logic(self._grid, self._config, self._render_group)
+        
+        self._render_group.draw(parent_screen)
+
+
         return
 
     def game_render(self):

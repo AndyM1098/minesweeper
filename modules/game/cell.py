@@ -39,11 +39,19 @@ class Cell(pygame.sprite.Sprite):
         self._cell_type = CellType.CELL
 
         # Change this to grab an already existing surface
-        self.image: pygame.Surface = pygame.Surface((cell_size[0], cell_size[1]))
-        self.image.fill((RevealColors.NOT_REVEALED.value))
-        self.rect: pygame.Rect = self.image.get_rect()
+        
+        # self.image: pygame.Surface = pygame.Surface((cell_size[0], cell_size[1])) # Original. 
+        # self.image.fill((RevealColors.NOT_REVEALED.value))
 
-        self.rect.topleft = (start_pos[0], start_pos[1])
+        # Render will set this!
+        self.image: pygame.Surface = None
+
+        self._rect_size = (config.cell_width, config.cell_height)
+        
+        # Set rectangle
+        self.rect: pygame.Rect = None #self.image.get_rect()
+
+        # self.rect.topleft = (start_pos[0], start_pos[1])
 
         self._revealed: CellRevealed = CellRevealed.NO_REVEAL
         self._flag = CellFlagState.NO_FLAG

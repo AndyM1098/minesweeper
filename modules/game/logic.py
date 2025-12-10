@@ -7,12 +7,12 @@ from ..event_handler.eventEnums import ActionType
 from dataclasses import dataclass
 from typing import Union, List, Tuple
 from .cell import MineCell, EmptyCell
-
+from .render import RenderGroup
 
 class Logic():
-    def __init__(self, grid: Grid, config: Config, render: Render):
+    def __init__(self, grid: Grid, config: Config, render_group: RenderGroup):
         
-        self._render = render
+        self._render_group = render_group
         self._grid: Grid = grid
         self._config: Config = config
         
@@ -70,8 +70,8 @@ class Logic():
             
             v[r][c] = True
 
-            self._grid.board[r][c].reveal_cell()
-            self._render.add_sprite_to_render_queue(self._grid.board[r][c])
+            self._grid.board[r][c].image = self._
+            self._render_group.mark_dirty(self._grid.board[r][c])
 
             if self._grid.board[r][c].adjacent_mine_count == 0:
                 for dr, dc in self._config.cell_neighbors:
@@ -118,10 +118,16 @@ class Logic():
                 nc = c + cx
 
                 try:
-                    assert nr >= 0 and nc >= 0
+                    assert nr >= 0 and nc >= 0 
                     self._grid.board[nr][nc]
                 except Exception as e:
                     print(e)
                     continue
                 
+
                 self._grid.board[nr][nc].increment_adjacent_mine_count()
+            
+
+            self._render_group.mark_dirty(self._grid.board[r][c])
+
+        return
