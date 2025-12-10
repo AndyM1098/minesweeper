@@ -1,10 +1,12 @@
 import pygame
-from modules.grid import Grid
+from modules.event_handler.eventHandler import EventHandler
 from modules.settings import Settings
-from modules.eventHandler import EventHandler, ActionType, Action
-from modules.game import Game
+from modules.game.game import Game
 from typing import Tuple
 import random
+from modules.event_handler.eventEnums import ActionType
+from modules.event_handler.eventAction import Action
+
 
 class App:
     def __init__(self):
@@ -23,7 +25,7 @@ class App:
         self.size: Tuple[int, int] = (0, 0)
         self.clock: pygame.time.Clock = pygame.time.Clock()
 
-        self.game: Game = Game()
+        self.game: Game = Game(self._display_surf)
         self.event_handler: EventHandler = EventHandler()
 
         self._running = True
@@ -39,24 +41,13 @@ class App:
         if event.type == pygame.QUIT:
             return 1
         return 0
-        # coords, action = self.event_handler.process_event(event)
-        return coords, action
     
-    def on_loop(self, coords, action: bool):
-
-        if(action == ActionType.REVEAL):
-            sprite_num = self.grid.get_cell_from_coords(coords)
-            self.grid.update_logic(sprite_num, action)
-        elif action == ActionType.DRAG:
-            # TODO
-            pass
-        elif action == ActionType.FLAG:
-            sprite_num = self.grid.get_cell_from_coords(coords)
-            self.grid.update_logic(sprite_num, action)
+    def on_loop(self, action: Action):
+        self.game.apply_action(action)
         return
     
     def on_render(self):
-        # self.game.update_render()
+        self.game.game_render()
         pygame.display.flip()
         self.clock.tick(self.settings.frame_rate)
         return
@@ -66,38 +57,29 @@ class App:
 
     def on_execute(self):
         
-        a_e: Action = None # type: ignore
-        
+        next_action: Action
+
         if self.on_init() == False:
             self._running = False
 
+        # Render game if not already rendered!
+        self.on_render()
+
         while( self._running ):
-            a_e = self.event_handler.get_action()
-            if a_e.action == ActionType.QUIT:
+            next_action = self.event_handler.get_action()
+            
+            if next_action.action == ActionType.QUIT:
                 self._running = False
                 continue
             
-            # print(a_e, "\n\n\n")
-
-            # self.game.apply_action(a_e)
-            # self.game.update_render()
-
-            # for event in pygame.event.get():
-            #     action = self.on_event(event)
-
-            #     if action == 1:
-            #         self._running = False
-            #         continue
+            if next_action.action == ActionType.NONE:
+                continue
             
-            # if action is not ActionType.NONE:
-            #     self.on_loop(coords, action)
+            self.on_loop(next_action)
             self.on_render()
 
         self.on_cleanup()
  
 if __name__ == "__main__" :
-    print(pygame.BUTTON_LEFT)
-    print(pygame.BUTTON_MIDDLE)
-    print(pygame.BUTTON_RIGHT)
     theApp = App()
     theApp.on_execute()
