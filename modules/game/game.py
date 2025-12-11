@@ -2,7 +2,7 @@ from modules.settings import Settings
 from modules.event_handler.eventAction import Action, ActionType
 import pygame.surface
 
-from .render import Render as Game_Render
+from .render import Render as Game_Render, RenderGroup
 from .logic import Logic as Game_Logic
 from .grid import Grid as Game_Grid
 from modules.settings import Settings as Game_Settings
@@ -23,7 +23,7 @@ class Game():
             Will contain ALL the game information / modules including logic and rendering modules
         """
 
-        # Grab the current settings. Update this to 
+        # Grab the current settings. Update this to grab from a settings file. 
         self._settings: Settings = self.Settings()
         self._config: Game_Config = self.Config(parent_screen, self._settings)
         self._grid: Game_Grid = self.Grid(self._config)
@@ -41,3 +41,4 @@ class Game():
 
     def apply_action(self, a: Action):
         self._logic.update_board(a)
+

@@ -70,6 +70,7 @@ class Logic():
             
             v[r][c] = True
 
+            
             self._grid.board[r][c].image = self._
             self._render_group.mark_dirty(self._grid.board[r][c])
 

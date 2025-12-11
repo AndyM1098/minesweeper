@@ -44,19 +44,21 @@ class RenderGroup(pg.sprite.Group):
     def __init__(self, config: Config):
         super().__init__()
         self._sprite_reveal_change_queue: List[Tuple[Union[MineCell, EmptyCell], RevealColors]] = []
+        self._image_set = RenderImageSet(config)
+        
         # Will hold a list of cell sprites that we want to change the image for
         #   Since it will be a reveal cell!
         return
     
-    def mark_dirty(self, sprite):
-        self.add(sprite)
+    def mark_dirty(self, cell: Union[MineCell, EmptyCell]):
+        self.add(cell)
 
-    def queue_sprite_reveal(self, cell_sprite: Union[MineCell, EmptyCell], color: RevealColors):
+    def queue_sprite_reveal(self, cell_sprite: Union[MineCell, EmptyCell]):
         # Logic will add sprites that need to be changed to this queue.
         #   On render, the render class will update the color.
-        assert issubclass(cell_sprite, Cell) # type: ignore
-        assert isinstance(color, RevealColors)
-        self._sprite_reveal_change_queue.append((cell_sprite, color))
+        assert isinstance(cell_sprite, Cell) # type: ignore
+        cell_sprite.image = self._image_set[cell_sprite.reveal_color]
+        self.mark_dirty(cell_sprite)
         return
         
     

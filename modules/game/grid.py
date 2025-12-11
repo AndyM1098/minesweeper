@@ -5,16 +5,40 @@ import random
 import sys
 
 from ..settings import Settings
-from .enums import RevealColors, cell_neighbor_increments
+from .enums import RevealColors
 from .enums import CellFlagState, CellRevealed
 from .config import Config
 from modules.event_handler.eventAction import Action
 
+from enums import Enum
+
+
+class cell_neighbor_increments(Enum):
+    UPPER_LEFT      = (-1, -1)
+    UPPER_MIDDLE    = (-1, 0)
+    UPPER_RIGHT     = (-1, 1)
+    MIDDLE_LEFT     = (0, -1)
+    MIDDLE_RIGHT    = (0, 1)
+    LOWER_LEFT      = (1, -1)
+    LOWER_MIDDLE    = (1, 0)
+    LOWER_RIGHT     = (1, 1)
+    """
+    Table the above enum is based on!
+    row\col -1          0           1
+      -1    (-1, -1)    (-1, 0)     (-1, 1)
+      0     (0,  -1)    (0,  0)     (0,  1)
+      1     (1, -1)     (1,  0)     (1,  1)
+    
+    """
+
 
 class GridMetaData:
     def __init__(self, config: Config):
-        
-        self._config: Config = config
+    
+        self.num_mines: int = config.num_mines
+        self.num_rows: int = config.num_rows
+        self.num_columns: int = config.num_columns
+        self.num_cells: int = self.num_rows * self.num_columns
 
         self.num_flags:int  = 0
         self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
@@ -27,11 +51,14 @@ class GridMetaData:
         
         return
 
+    def _id_to_grid_coords(self, cell_id: int)-> Tuple[int, int]:
+        r = cell_id // self.num_columns
+        c = cell_id % self.num_columns
+        return (r, c)
+
     def generate_mine_ids(self):
-        self.mine_ids = random.sample(range(0, self._config.num_cells), self._config.num_mines)
+        self.mine_ids = [id for id in random.sample(range(0, self.num_cells), self.num_mines)]
         return
-
-
 
 class Grid:
     """
@@ -40,8 +67,7 @@ class Grid:
         The grid is comprised of a 2d array of cells.
 
     """
-    # todo
-    #   Fix parameter list!
+
     def __init__(self, config: Config):
         
         self._config: Config = config
@@ -50,7 +76,7 @@ class Grid:
 
         # Cell groups
         self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
-        self.mine_group: pygame.sprite.Group = pygame.sprite.Group()
+        self.mine_group: pygame.sprite.Group[MineCell] = pygame.sprite.Group()
 
         # 2d matrix of Cells representing each cell!
         self.board: List[List[Union[MineCell, EmptyCell]]] = self._init_grid(config)
@@ -63,10 +89,11 @@ class Grid:
         r = cell_num // self.metadata.num_columns
         c = cell_num % self.metadata.num_columns
         return r, c
-    """
 
+
+
+    """
         Below are functions used in __init__()
-    
     """
     def _init_grid(self, config: Config) -> List[List[Union[MineCell, EmptyCell]]]:
         
@@ -77,8 +104,8 @@ class Grid:
                             for _ in range(0, self._config.num_rows)
                     ]
         
-        self._init_mines(ret_grid, config)
-        self._init_empty(ret_grid, config)
+        self._init_mines(ret_grid)
+        self._init_empty(ret_grid)
 
         # Once grid is set, we want to render every cell made!
         self._config.render_queue.add(self.cell_group)
@@ -86,46 +113,17 @@ class Grid:
 
         return ret_grid
     
-    def _init_mines(self, g: List[List[Cell]], config: Config):
-
-        self.metadata.generate_mine_ids()
-        cell_size = self._config.cell_width, self._config.cell_height
-
-
+    def _init_mines(self, g: List[List[Cell]]):
         for id in self.metadata.mine_ids:
             r, c = self.id_to_grid_coords(id)
-            new_mine = MineCell(id,
-                                  self.compute_cell_pos(r, c),
-                                  cell_size,
-                                  r,
-                                  c,
-                                  config)
-                
-            g[r][c] = new_mine
-            self.mine_group.add(new_mine)
-            self.cell_group.add(new_mine)
-
-        return True
+            g[r][c] = MineCell(id)
+            self.mine_group.add(g[r][c])
           
-    def _init_empty(self, g: List[List[Cell]], config: Config):
-
+    def _init_empty(self, g: List[List[Cell]]):
         for r in range(0, self._config.num_rows):
             for c in range(0, self._config.num_columns):
-                
                 if g[r][c] == None:
-                    cell_id = r * self._config.num_columns + c
-                    cell_pos = self.compute_cell_pos(r, c)
-                    
-                    new_cell = EmptyCell(cell_id,
-                                            cell_pos,
-                                            (self._config.cell_width, self._config.cell_height),
-                                            r,
-                                            c,
-                                            config)
-                    
-                    g[r][c] = new_cell
-                    self.cell_group.add(new_cell)
-        return
+                    g[r][c]= EmptyCell(r * self._config.num_columns + c)
 
     def _determine_neighbor_cells(self):
         """
@@ -139,8 +137,7 @@ class Grid:
         m = self.metadata.num_columns
 
         for mine in self.mine_group:
-            r = mine.grid_r
-            c = mine.grid_c
+            r, c = self.id_to_grid_coords(mine)
 
             for dr, dc in self.metadata.cell_neighbors:
                 nr = r + dr

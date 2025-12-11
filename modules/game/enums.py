@@ -24,23 +24,6 @@ class RevealColors(Enum):
     BLUE = (0, 0, 255)
     BLACK = (0, 0, 0)
 
-class cell_neighbor_increments(Enum):
-    UPPER_LEFT      = (-1, -1)
-    UPPER_MIDDLE    = (-1, 0)
-    UPPER_RIGHT     = (-1, 1)
-    MIDDLE_LEFT     = (0, -1)
-    MIDDLE_RIGHT    = (0, 1)
-    LOWER_LEFT      = (1, -1)
-    LOWER_MIDDLE    = (1, 0)
-    LOWER_RIGHT     = (1, 1)
-    """
-    Table the above enum is based on!
-    row\col -1          0           1
-      -1    (-1, -1)    (-1, 0)     (-1, 1)
-      0     (0,  -1)    (0,  0)     (0,  1)
-      1     (1, -1)     (1,  0)     (1,  1)
-    
-    """
 
 class CellFlagState(Enum):
     """
