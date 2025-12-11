@@ -1,10 +1,11 @@
 from .grid import Grid
 from .config import Config
-from .cell import MineCell
+from .cell import MineCell, EmptyCell, Cell
 import pygame as pg
 from dataclasses import dataclass
 from .enums import RevealColors
 
+from typing import Union, List, Tuple
 
 class RenderImageSet():
 
@@ -23,10 +24,12 @@ class RenderImageSet():
     def __getitem__(self, key):
         # Case 1: key is a RevealColors enum
         if isinstance(key, RevealColors):
+            print("RenderImageSet[RevealColors]")
             return self._image_set[key]
 
         # Case 2: key is an integer
         if isinstance(key, int):
+            print("RenderImageSet[int]")
             if not (0 <= key < len(self._image_set)):
                 raise IndexError("RenderImageSet index out of range")
 
@@ -40,34 +43,32 @@ class RenderImageSet():
 class RenderGroup(pg.sprite.Group):
     def __init__(self, config: Config):
         super().__init__()
-        self._dirty = pg.sprite.Group()
-        self._render_image_set = RenderImageSet(config)
-
-    def mark_dirty(self, sprite):
-        self._dirty.add(sprite)
-
-    def draw(self, surface):
-        self._dirty.draw(surface)
-        self._dirty.empty()   # clear queue after drawing
-
-    def change_sprite_image(self, sprite: pg.sprite.Sprite, c: RevealColors | int):
-        assert isinstance(sprite, pg.sprite.Sprite)
-        assert isinstance(c, RevealColors) or isinstance(c, int)
-        sprite.image = self._render_image_set[c]
-        print(sprite)
+        self._sprite_reveal_change_queue: List[Tuple[Union[MineCell, EmptyCell], RevealColors]] = []
+        # Will hold a list of cell sprites that we want to change the image for
+        #   Since it will be a reveal cell!
         return
+    
+    def mark_dirty(self, sprite):
+        self.add(sprite)
 
+    def queue_sprite_reveal(self, cell_sprite: Union[MineCell, EmptyCell], color: RevealColors):
+        # Logic will add sprites that need to be changed to this queue.
+        #   On render, the render class will update the color.
+        assert issubclass(cell_sprite, Cell) # type: ignore
+        assert isinstance(color, RevealColors)
+        self._sprite_reveal_change_queue.append((cell_sprite, color))
+        return
+        
+    
 class Render():
-    def __init__(self, grid: Grid, config: Config) -> RenderImageSet:
-
-         
+    def __init__(self, grid: Grid, config: Config):
         self._parent_screen = config.parent_screen
         # self._grid = grid
 
         self._to_render: RenderGroup = RenderGroup(config)
         self._mines: pg.sprite.Group = pg.sprite.Group()
 
-        # Initialize all cells as needed. 
+        # Initialize all cells as needed.
         for r in range(0, config.num_rows):
             for c in range(0, config.num_columns):
 

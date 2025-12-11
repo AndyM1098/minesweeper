@@ -23,6 +23,7 @@ class Game():
             Will contain ALL the game information / modules including logic and rendering modules
         """
 
+        # Grab the current settings. Update this to 
         self._settings: Settings = self.Settings()
         self._config: Game_Config = self.Config(parent_screen, self._settings)
         self._grid: Game_Grid = self.Grid(self._config)
