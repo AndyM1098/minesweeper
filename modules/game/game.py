@@ -21,6 +21,26 @@ class Game():
         
         """
             Will contain ALL the game information / modules including logic and rendering modules
+
+            Render should only handle rendering
+                This should handle a render group object. 
+                The render should have a function that can take in a render group object.
+                Sprites in the group should just be simply drawn, then the group resets.
+            
+            Logic should only apply logic
+                This includes changing the image when cell is modified.
+                If a cell is modified:
+                    We update the cells state.
+                    We update the cells image
+                    Add the cell to the render group for further rendering
+
+            The grid object
+                Holds the actual board state.
+                Contains a board variable that is a 2d matrix of Cell subclasses.
+
+            Config holds global state.
+                I will later try to implement a way for config to update everything if the config changes.
+
         """
 
         # Grab the current settings. Update this to grab from a settings file. 

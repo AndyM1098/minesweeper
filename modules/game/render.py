@@ -63,16 +63,22 @@ class RenderGroup(pg.sprite.Group):
         
     
 class Render():
-    def __init__(self, grid: Grid, config: Config):
+    def __init__(self, grid: Grid, config: Config):\
+    
         self._parent_screen = config.parent_screen
-        # self._grid = grid
-
         self._to_render: RenderGroup = RenderGroup(config)
         self._mines: pg.sprite.Group = pg.sprite.Group()
+    
 
         # Initialize all cells as needed.
         for r in range(0, config.num_rows):
             for c in range(0, config.num_columns):
+                
+                curr_cell: Union[MineCell, EmptyCell] = grid.board[r][c]
+                
+                curr_cell.image = self._to_render._image_set[curr_cell.reveal_color]
+                curr_cell.rect = curr_cell.image.get_rect()
+                curr_cell.rect.topleft = grid.compute_cell_pos(r, c)
 
                 self._to_render.add(grid.board[r][c])
                 
@@ -80,11 +86,6 @@ class Render():
                 if isinstance(grid.board[r][c], MineCell):
                     self._mines.add(grid.board[r][c])
                 
-                # Because we want all images to be shared so we aren't creating images with a million
-                #   Cells or whatever. 
-                self._to_render.change_sprite_image(grid.board[r][c], 0)
-                grid.board[r][c].rect = grid.board[r][c].image.get_rect()
-                grid.board[r][c].rect.topleft = grid.compute_cell_pos(r, c)
 
         return
     

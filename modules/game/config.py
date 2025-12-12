@@ -34,9 +34,6 @@ class Config():
 
         random.seed(settings.seed)
 
-        self.render_queue: pg.sprite.Group = pg.sprite.Group()
-        self._rq_empty: bool = True
-
         from .enums import cell_neighbor_increments
         self.cell_neighbors = [v.value for v in list(cell_neighbor_increments)]
 

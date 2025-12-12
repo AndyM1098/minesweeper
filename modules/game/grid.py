@@ -41,7 +41,7 @@ class GridMetaData:
         self.num_cells: int = self.num_rows * self.num_columns
 
         self.num_flags:int  = 0
-        self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
+        # self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
 
         # Contains the ids of the cells that contain mines
         self.mine_ids: List[int] = []
@@ -75,17 +75,16 @@ class Grid:
         self.metadata: GridMetaData = GridMetaData(config)
 
         # Cell groups
-        self.cell_group: pygame.sprite.Group = pygame.sprite.Group()
         self.mine_group: pygame.sprite.Group[MineCell] = pygame.sprite.Group()
 
         # 2d matrix of Cells representing each cell!
-        self.board: List[List[Union[MineCell, EmptyCell]]] = self._init_grid(config)
+        self.board: List[List[Union[MineCell, EmptyCell]]] = self._init_board(config)
         self._grid_init = True
 
         return
 
     # Utilities
-    def get_grid_coords_from_cell_num(self, cell_num: int)->Tuple[int, int]:
+    def get_board_rcs_cell_id(self, cell_num: int)->Tuple[int, int]:
         r = cell_num // self.metadata.num_columns
         c = cell_num % self.metadata.num_columns
         return r, c
@@ -95,7 +94,7 @@ class Grid:
     """
         Below are functions used in __init__()
     """
-    def _init_grid(self, config: Config) -> List[List[Union[MineCell, EmptyCell]]]:
+    def _init_board(self, config: Config) -> List[List[Union[MineCell, EmptyCell]]]:
         
         ret_grid = [
                         [
@@ -106,10 +105,6 @@ class Grid:
         
         self._init_mines(ret_grid)
         self._init_empty(ret_grid)
-
-        # Once grid is set, we want to render every cell made!
-        self._config.render_queue.add(self.cell_group)
-        self._config._rq_empty = len(self._config.render_queue) == 0
 
         return ret_grid
     
